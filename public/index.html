@@ -36,6 +36,7 @@
             width: 400px;
             top: 20px;
             right: 240px;
+            display: block;
         }
 
         #status {
@@ -65,7 +66,7 @@
     <div id="users"></div>
 
     <video id="local-video" autoplay muted></video>
-    <video id="remote-video" autoplay></video>
+    <video id="remote-video" muted autoplay></video>
 
     <p id="status"></p>
 
@@ -82,9 +83,6 @@
         const peer = new RTCPeerConnection({
             iceServers: [{ urls: "stun:stun.stunprotocol.org" }]
         });
-
-
-
         let callerId = null;
         let remoteOffer = null;
         let localStream = null;
@@ -94,7 +92,6 @@
                 socket.emit('peer:candidate', { to: callerId, candidate: event.candidate });
             }
         };
-
 
         socket.on('hello', ({ id }) => {
             document.getElementById('myId').innerText = id;
@@ -153,11 +150,19 @@
             await peer.setRemoteDescription(new RTCSessionDescription(offer));
         });
 
-        peer.ontrack = ({ streams: [stream] }) => {
-            console.log('✅ Remote track received');
-            const remoteVideo = document.getElementById('remote-video');
-            remoteVideo.srcObject = stream;
+        let remoteStream = null;
+
+        peer.ontrack = ({ track, streams }) => {
+            console.log('Received track:', track.kind);
+            console.log('Stream object:', streams[0]);
+            remoteStream = streams;
+            if (remoteStream) {
+                const video = document.getElementById('remote-video');
+                video.srcObject = remoteStream;
+                video.play().catch(e => console.warn('Autoplay failed:', e));
+            }
         };
+
 
         const createCall = async (to) => {
             const status = document.getElementById('status');
