@@ -1,62 +1,63 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>My Video App</title>
     <link rel="stylesheet" href="style.css">
     <style>
         body {
-    font-family: Arial, Helvetica, sans-serif;
-    padding: 20px;
-}
+            font-family: Arial, Helvetica, sans-serif;
+            padding: 20px;
+        }
 
-button {
-    padding: 10px 20px;
-    border-radius: 8px;
-    border: 1px solid #333;
-    background-color: #f0f0f0;
-    margin-top: 10px;
-    cursor: pointer;
-}
+        button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background-color: #f0f0f0;
+            margin-top: 10px;
+            cursor: pointer;
+        }
 
-#local-video {
-    position: absolute;
-    border: 2px solid green;
-    height: 200px;
-    width: 200px;
-    top: 20px;
-    right: 20px;
-}
+        #local-video {
+            position: absolute;
+            border: 2px solid green;
+            height: 200px;
+            width: 200px;
+            top: 20px;
+            right: 20px;
+        }
 
-#remote-video {
-    position: absolute;
-    border: 2px solid blue;
-    height: 400px;
-    width: 400px;
-    top: 20px;
-    right: 240px;
-}
+        #remote-video {
+            position: absolute;
+            border: 2px solid blue;
+            height: 400px;
+            width: 400px;
+            top: 20px;
+            right: 240px;
+        }
 
-#status {
-    position: absolute;
-    bottom: 30px;
-    font-size: 18px;
-    left: 30px;
-}
+        #status {
+            position: absolute;
+            bottom: 30px;
+            font-size: 18px;
+            left: 30px;
+        }
 
-#incoming-call-popup {
-    position: absolute;
-    top: 30%;
-    left: 30%;
-    background: white;
-    padding: 30px;
-    border: 2px solid #333;
-    z-index: 100;
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
-}
-
+        #incoming-call-popup {
+            position: absolute;
+            top: 30%;
+            left: 30%;
+            background: white;
+            padding: 30px;
+            border: 2px solid #333;
+            z-index: 100;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
     </style>
 </head>
+
 <body>
 
     <h3>Your ID: <span id="myId"></span></h3>
@@ -78,13 +79,22 @@ button {
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-
         const peer = new RTCPeerConnection({
             iceServers: [{ urls: "stun:stun.stunprotocol.org" }]
         });
 
+
+
         let callerId = null;
         let remoteOffer = null;
+        let localStream = null;
+
+        peer.onicecandidate = (event) => {
+            if (event.candidate && callerId) {
+                socket.emit('peer:candidate', { to: callerId, candidate: event.candidate });
+            }
+        };
+
 
         socket.on('hello', ({ id }) => {
             document.getElementById('myId').innerText = id;
@@ -103,25 +113,32 @@ button {
         socket.on('incomming:call', async ({ from, offer }) => {
             callerId = from;
             remoteOffer = offer;
-
             document.getElementById('caller-id').innerText = from;
             document.getElementById('incoming-call-popup').style.display = 'block';
+        });
+        socket.on('peer:candidate', ({ candidate }) => {
+            if (candidate) {
+                peer.addIceCandidate(new RTCIceCandidate(candidate));
+            }
         });
 
         document.getElementById('accept-call').addEventListener('click', async () => {
             document.getElementById('incoming-call-popup').style.display = 'none';
             document.getElementById('status').innerText = 'Call Accepted';
 
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            const localVideo = document.getElementById('local-video');
+            localVideo.srcObject = localStream;
+
+            for (const track of localStream.getTracks()) {
+                peer.addTrack(track, localStream);
+            }
+
             await peer.setRemoteDescription(new RTCSessionDescription(remoteOffer));
             const answer = await peer.createAnswer();
-            await peer.setLocalDescription(new RTCSessionDescription(answer));
+            await peer.setLocalDescription(answer);
 
             socket.emit('call:accepted', { answere: answer, to: callerId });
-
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            for (const track of stream.getTracks()) {
-                peer.addTrack(track, stream);
-            }
         });
 
         document.getElementById('reject-call').addEventListener('click', () => {
@@ -137,26 +154,27 @@ button {
         });
 
         peer.ontrack = ({ streams: [stream] }) => {
-            const video = document.getElementById('remote-video');
-            video.srcObject = stream;
+            console.log('✅ Remote track received');
+            const remoteVideo = document.getElementById('remote-video');
+            remoteVideo.srcObject = stream;
         };
 
         const createCall = async (to) => {
             const status = document.getElementById('status');
             status.innerText = `Calling ${to}...`;
 
-            const localOffer = await peer.createOffer();
-            await peer.setLocalDescription(new RTCSessionDescription(localOffer));
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            const localVideo = document.getElementById('local-video');
+            localVideo.srcObject = localStream;
 
-            socket.emit('outgoing:call', { fromOffer: localOffer, to });
-
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            for (const track of stream.getTracks()) {
-                peer.addTrack(track, stream);
+            for (const track of localStream.getTracks()) {
+                peer.addTrack(track, localStream);
             }
 
-            const localVideo = document.getElementById('local-video');
-            localVideo.srcObject = stream;
+            const localOffer = await peer.createOffer();
+            await peer.setLocalDescription(localOffer);
+
+            socket.emit('outgoing:call', { fromOffer: localOffer, to });
         };
 
         const getAndUpdateUsers = async () => {
@@ -181,13 +199,9 @@ button {
             document.getElementById('users').appendChild(btn);
         };
 
-        const getUserMedia = async () => {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            document.getElementById('local-video').srcObject = stream;
-        };
-
         window.addEventListener('load', getAndUpdateUsers);
-        window.addEventListener('load', getUserMedia);
     </script>
+
 </body>
+
 </html>

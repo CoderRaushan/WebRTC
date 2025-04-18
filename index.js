@@ -33,6 +33,9 @@ io.on('connection', socket => {
         socket.to(to).emit('incomming:answere', { from: socket.id, offer: answere })
     });
 
+    socket.on('peer:candidate', ({ to, candidate }) => {
+        io.to(to).emit('peer:candidate', { candidate });
+    });
 
     socket.on('disconnect', () => {
         console.log(`user disconnected: ${socket.id}`);
@@ -42,7 +45,7 @@ io.on('connection', socket => {
 });
 
 
-app.use(express.static( path.resolve('./public') ));
+app.use(express.static(path.resolve('./public')));
 
 app.get('/users', (req, res) => {
     return res.json(Array.from(users));
