@@ -65,8 +65,8 @@
     <h3>Online Users (Click to Call)</h3>
     <div id="users"></div>
 
-    <video id="local-video" autoplay muted></video>
-    <video id="remote-video" muted autoplay></video>
+    <video id="local-video" autoplay playsinline></video>
+    <video id="remote-video" autoplay playsinline></video>
 
     <p id="status"></p>
 
@@ -150,19 +150,32 @@
             await peer.setRemoteDescription(new RTCSessionDescription(offer));
         });
 
-  
 
-        peer.ontrack = ({ track, streams }) => {
-            console.log('Received track:', track.kind);
-            console.log('Stream object:', streams[0]);
+
+        // peer.ontrack = async({ track, streams }) => {
+        //     console.log('Received track:', track.kind);
+        //     console.log('Stream object:', streams[0]);
+
+        //     const remoteVideo = document.getElementById('remote-video');
+        //     if (streams && streams[0]) {
+        //         remoteVideo.srcObject = streams[0]; // ✅ assign only the MediaStream
+        //         remoteVideo.play().catch(e => console.warn('Autoplay failed:', e));
+        //     } else {
+        //         console.warn("No valid MediaStream in streams array");
+        //     }
+        // };
+        peer.ontrack = ({ streams: [stream] }) => {
+           
+            console.log("Remote stream:", stream);
 
             const remoteVideo = document.getElementById('remote-video');
-            if (streams && streams[0]) {
-                remoteVideo.srcObject = streams[0]; // ✅ assign only the MediaStream
-                remoteVideo.play().catch(e => console.warn('Autoplay failed:', e));
-            } else {
-                console.warn("No valid MediaStream in streams array");
-            }
+            remoteVideo.srcObject = stream;
+
+            remoteVideo.onloadedmetadata = () => {
+                remoteVideo.play().catch(err => {
+                    console.warn("Autoplay error:", err);
+                });
+            };
         };
 
 
