@@ -1,37 +1,81 @@
 body {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: 'Segoe UI', sans-serif;
+    margin: 0;
+    background-color: #f4f4f4;
 }
 
-button {
-    padding: 10px 20px;
-    border-radius: 10px;
-    border: 1px solid;
-    cursor: pointer;
-    display: block;
-    margin-top: 10px;
+.container {
+    display: flex;
+    height: 100vh;
 }
 
-#local-video {
-    position: absolute;
-    border: 2px solid green;
-    height: 250px;
+.left-panel {
     width: 250px;
-    top: 20px;
-    right: 20px
+    background: #fff;
+    border-right: 1px solid #ddd;
+    padding: 20px;
+    overflow-y: auto;
 }
 
-#remote-video {
-    position: absolute;
-    border: 2px solid blue;
-    height: 550px;
-    width: 550px;
-    top: 20px;
-    right: 300px
+.users-list button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    margin: 5px 0;
+    padding: 10px;
+    width: 100%;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.users-list button:hover {
+    background-color: #0056b3;
+}
+
+.video-panel {
+    flex: 1;
+    position: relative;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#local-video, #remote-video {
+    border: 2px solid #000;
+    border-radius: 10px;
+    max-width: 90%;
+    max-height: 40vh;
+    margin: 10px;
 }
 
 #status {
+    font-size: 18px;
+    color: green;
+    margin-top: 20px;
+}
+
+.popup {
     position: absolute;
-    bottom: 30px;
-    font-size: 20px;
-    left: 30px;
+    top: 30%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    border: 2px solid #000;
+    padding: 20px;
+    z-index: 9999;
+    text-align: center;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
+
+.popup button {
+    margin: 10px;
+    padding: 10px 20px;
+    font-size: 16px;
+}
+
+.hidden {
+    display: none;
 }
