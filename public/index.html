@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>My Video App</title>
+    <title>My Audio App</title>
     <link rel="stylesheet" href="style.css">
     <style>
         body {
@@ -18,25 +18,6 @@
             background-color: #f0f0f0;
             margin-top: 10px;
             cursor: pointer;
-        }
-
-        #local-video {
-            position: absolute;
-            border: 2px solid green;
-            height: 200px;
-            width: 200px;
-            top: 20px;
-            right: 20px;
-        }
-
-        #remote-video {
-            position: absolute;
-            border: 2px solid blue;
-            height: 400px;
-            width: 400px;
-            top: 20px;
-            right: 240px;
-            display: block;
         }
 
         #status {
@@ -64,9 +45,6 @@
     <h3>Your ID: <span id="myId"></span></h3>
     <h3>Online Users (Click to Call)</h3>
     <div id="users"></div>
-
-    <video id="local-video" autoplay playsinline></video>
-    <video id="remote-video" autoplay playsinline></video>
 
     <p id="status"></p>
 
@@ -131,9 +109,12 @@
             document.getElementById('incoming-call-popup').style.display = 'none';
             document.getElementById('status').innerText = 'Call Accepted';
 
-            localStream = await navigator.mediaDevices.getUserMedia({ video: true });
-            const localVideo = document.getElementById('local-video');
-            localVideo.srcObject = localStream;
+            localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            
+            // Instead of video element, audio will be played
+            const audioElement = new Audio();
+            localStream.getAudioTracks().forEach(track => audioElement.srcObject = localStream);
+            audioElement.play();
 
             for (const track of localStream.getTracks()) {
                 peer.addTrack(track, localStream);
@@ -158,42 +139,11 @@
             await peer.setRemoteDescription(new RTCSessionDescription(offer));
         });
 
-
-
-        // peer.ontrack = async({ track, streams }) => {
-        //     console.log('Received track:', track.kind);
-        //     console.log('Stream object:', streams[0]);
-
-        //     const remoteVideo = document.getElementById('remote-video');
-        //     if (streams && streams[0]) {
-        //         remoteVideo.srcObject = streams[0]; // ✅ assign only the MediaStream
-        //         remoteVideo.play().catch(e => console.warn('Autoplay failed:', e));
-        //     } else {
-        //         console.warn("No valid MediaStream in streams array");
-        //     }
-        // };
-        peer.ontrack = ({ streams: [stream] }) => {
-
-            console.log("Remote stream:", stream);
-
-            const remoteVideo = document.getElementById('remote-video');
-            remoteVideo.srcObject = stream;
-
-            remoteVideo.onloadedmetadata = () => {
-                remoteVideo.play().catch(err => {
-                    console.warn("Autoplay error:", err);
-                });
-            };
-        };
-
-
         const createCall = async (to) => {
             const status = document.getElementById('status');
             status.innerText = `Calling ${to}...`;
 
-            localStream = await navigator.mediaDevices.getUserMedia({ video: true });
-            const localVideo = document.getElementById('local-video');
-            localVideo.srcObject = localStream;
+            localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
             for (const track of localStream.getTracks()) {
                 peer.addTrack(track, localStream);

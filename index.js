@@ -16,7 +16,7 @@ const users = new Map();
 
 io.on('connection', socket => {
     console.log(`user connected: ${socket.id}`);
-    users.set(socket.id, socket.id);
+    users.set(socket.id, socket.id);    
 
     // emit that a new user has joined as soon as someone joins
     socket.broadcast.emit('users:joined', socket.id);
