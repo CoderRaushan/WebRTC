@@ -155,7 +155,7 @@
         peer.ontrack = ({ track, streams }) => {
             console.log('Received track:', track.kind);
             console.log('Stream object:', streams[0]);
-            remoteStream = streams;
+            remoteStream = streams[0];
             if (remoteStream) {
                 const video = document.getElementById('remote-video');
                 video.srcObject = remoteStream;
