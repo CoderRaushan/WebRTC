@@ -150,16 +150,18 @@
             await peer.setRemoteDescription(new RTCSessionDescription(offer));
         });
 
-        let remoteStream = null;
+  
 
         peer.ontrack = ({ track, streams }) => {
             console.log('Received track:', track.kind);
             console.log('Stream object:', streams[0]);
-            remoteStream = streams[0];
-            if (remoteStream) {
-                const video = document.getElementById('remote-video');
-                video.srcObject = remoteStream;
-                video.play().catch(e => console.warn('Autoplay failed:', e));
+
+            const remoteVideo = document.getElementById('remote-video');
+            if (streams && streams[0]) {
+                remoteVideo.srcObject = streams[0]; // ✅ assign only the MediaStream
+                remoteVideo.play().catch(e => console.warn('Autoplay failed:', e));
+            } else {
+                console.warn("No valid MediaStream in streams array");
             }
         };
 
